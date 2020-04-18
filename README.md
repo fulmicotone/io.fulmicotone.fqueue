@@ -1,5 +1,5 @@
 # FQueue - Simple thread-safe queue consumer
-&nbsp;[![Build Status](https://travis-ci.org/fulmicotone/io.fulmicotone.fqueue.svg?branch=master)](https://travis-ci.org/fulmicotone/io.fulmicotone.fqueue) &nbsp;[![](https://jitpack.io/v/fulmicotone/io.fulmicotone.fqueue.svg)](https://jitpack.io/#fulmicotone/io.fulmicotone.fqueue)
+&nbsp;[![Build Status](https://travis-ci.org/fulmicotone/io.fulmicotone.fqueue.svg?branch=master)](https://travis-ci.org/fulmicotone/io.fulmicotone.fqueue) &nbsp;[![](https://jitpack.io/v/fulmicotone/io.fulmicotone.fqueue.svg)](https://jitpack.io/#fulmicotone/io.fulmicotone.fqueue) &nbsp; [![Coverage Status](https://coveralls.io/repos/github/fulmicotone/io.fulmicotone.fqueue/badge.svg?branch=master)](https://coveralls.io/github/fulmicotone/io.fulmicotone.fqueue?branch=master)
 
 
 ### Goal - Build a simple thread-safe queue consumer in pure java8

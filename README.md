@@ -12,10 +12,23 @@
 
 ### How is designed:
 
-- FQueueRegistry is the class which maintains all FQueue's.
 - Every FQueue process objects of certain class applying a user-defined task.
+- FQueue could be single thread or fan-out in multi thread.
 - FanOut is supported in order to process with multiples core a stream of objects dispatched in round-robin mode.
+- FQueueRegistry is the class which maintains all FQueue's objects and is able to send datas to them.
 
+
+#### FQueue Architecture
+
+![alt tag](https://raw.githubusercontent.com/fulmicotone/io.fulmicotone.fqueue/develop/res/drawioImg/fqueue_single.png)
+
+#### FQueue with fan-out
+
+![alt tag](https://raw.githubusercontent.com/fulmicotone/io.fulmicotone.fqueue/develop/res/drawioImg/round_robin.png)
+
+#### FQueueRegistry
+
+![alt tag](https://raw.githubusercontent.com/fulmicotone/io.fulmicotone.fqueue/develop/res/drawioImg/fqueue_registry.png)
 
 ### Installation:
 

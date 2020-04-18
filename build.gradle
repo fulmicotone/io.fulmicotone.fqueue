@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'jacoco'
+    id 'com.github.kt3k.coveralls' version '2.8.4'
 }
 
 group 'io.fulmicotone'
@@ -20,14 +21,14 @@ dependencies {
 
 jacoco {
     toolVersion = "0.8.5"
-    reportsDir = file("$buildDir/customJacocoReportDir")
+    reportsDir = file("$buildDir/jacoco/xml")
 }
 
 
 
 jacocoTestReport {
     reports {
-        xml.enabled false
+        xml.enabled true
         csv.enabled false
         html.destination file("${buildDir}/jacocoHtml")
     }
@@ -41,6 +42,10 @@ jacocoTestCoverageVerification {
             }
         }
     }
+}
+
+coveralls {
+    jacocoReportPath "$buildDir/jacoco/xml/test/jacocoTestReport.xml"
 }
 
 

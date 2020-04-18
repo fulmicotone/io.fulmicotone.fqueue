@@ -9,6 +9,8 @@ dist: trusty
 # https://docs.travis-ci.com/user/languages/java#Caching
 before_cache:
   - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
+after_success:
+  - gradle coveralls
 cache:
   directories:
   - $HOME/.gradle/caches/

@@ -1,5 +1,5 @@
 # FQueue - Simple thread-safe queue consumer
-&nbsp;[![Build Status](https://travis-ci.org/fulmicotone/io.fulmicotone.fqueue.svg?branch=master)](https://travis-ci.org/fulmicotone/io.fulmicotone.fqueue) &nbsp;[![](https://jitpack.io/v/fulmicotone/io.fulmicotone.fqueue.svg)](https://jitpack.io/#fulmicotone/io.fulmicotone.fqueue)
+&nbsp;[![Build Status](https://travis-ci.org/fulmicotone/io.fulmicotone.fqueue.svg?branch=master)](https://travis-ci.org/fulmicotone/io.fulmicotone.fqueue) &nbsp;[![](https://jitpack.io/v/fulmicotone/io.fulmicotone.fqueue.svg)](https://jitpack.io/#fulmicotone/io.fulmicotone.fqueue) &nbsp; [![Coverage Status](https://coveralls.io/repos/github/fulmicotone/io.fulmicotone.fqueue/badge.svg?branch=master)](https://coveralls.io/github/fulmicotone/io.fulmicotone.fqueue?branch=master)
 
 
 ### Goal - Build a simple thread-safe queue consumer in pure java8
@@ -12,10 +12,23 @@
 
 ### How is designed:
 
-- FQueueRegistry is the class which maintains all FQueue's.
 - Every FQueue process objects of certain class applying a user-defined task.
+- FQueue could be single thread or fan-out in multi thread.
 - FanOut is supported in order to process with multiples core a stream of objects dispatched in round-robin mode.
+- FQueueRegistry is the class which maintains all FQueue's objects and is able to send datas to them.
 
+
+#### FQueue Architecture
+
+![alt tag](https://raw.githubusercontent.com/fulmicotone/io.fulmicotone.fqueue/develop/res/drawioImg/fqueue_single.png)
+
+#### FQueue with fan-out
+
+![alt tag](https://raw.githubusercontent.com/fulmicotone/io.fulmicotone.fqueue/develop/res/drawioImg/round_robin.png)
+
+#### FQueueRegistry
+
+![alt tag](https://raw.githubusercontent.com/fulmicotone/io.fulmicotone.fqueue/develop/res/drawioImg/fqueue_registry.png)
 
 ### Installation:
 

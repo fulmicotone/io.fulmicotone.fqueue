@@ -8,6 +8,7 @@ import io.fulmicotone.fqueue.accumulators.FQueueAccumulatorFactory;
 import io.fulmicotone.fqueue.accumulators.FQueueAccumulatorLengthFunction;
 import io.fulmicotone.fqueue.interfaces.FQueueConsumer;
 import io.fulmicotone.fqueue.interfaces.FQueueConsumerFactory;
+import io.fulmicotone.fqueue.options.BatchingOption;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,12 +33,6 @@ public class FQueue<E> {
     /** Broadcaster object, useful to allow FQueueConsumer push objects in other FQueues */
     private FQueueBroadcast broadcaster;
 
-    /** Flush timeout  */
-    private int flushTimeout;
-
-    /** Flush timeunit  */
-    private TimeUnit flushTimeUnit;
-
     /** Internal executor service. Every FQueue has it's own executor service  */
     private ExecutorService executorService;
 
@@ -49,11 +44,16 @@ public class FQueue<E> {
     private final AtomicLong received = new AtomicLong();
     private final AtomicLong batched = new AtomicLong();
 
+    /** Batching Option  */
+    private BatchingOption<E> batchingOption;
+
     /** FanOut settings. FQueue could be set in fan-out mode which means that current FQueue act as round robin dispatcher
      * while others FQueue child will do the work. This increase parallelism balancing resources.
      * */
     private int fanOut = 1;
     private List<FQueue<E>> childFQueues = new ArrayList<>();
+
+
 
 
     public FQueue(Class<E> clazz, FQueueRegistry registry) {
@@ -62,51 +62,49 @@ public class FQueue<E> {
         this.clazz = clazz;
         this.queue = new LinkedBlockingQueue<>();
         this.executorService = Executors.newFixedThreadPool(1);
-
-    }
-
-    public void consume(int chunkSize, int flushTimeout, TimeUnit flushTimeUnit, FQueueConsumerFactory<E> factory){
-        this.accumulatorFactory = new FQueueAccumulatorFactory<>(chunkSize, e -> 1l);
-        this.flushTimeout = flushTimeout;
-        this.flushTimeUnit = flushTimeUnit;
-
-        if(fanOut == 1){
-            executorService.submit(Objects.requireNonNull(consumeBatching(factory.build())));
-        }else{
-            IntStream.range(0, fanOut)
-                    .forEach(i -> {
-                        FQueue<E> child = new FQueue<>(clazz, null);
-                        child.consume(chunkSize, flushTimeout, flushTimeUnit, factory);
-                        childFQueues.add(child);
-                    });
-            executorService.submit(Objects.requireNonNull(consumeDispatcher()));
-        }
+        BatchingOption.newBuilder(this).done();
     }
 
 
-    public void consume(int maxLength, FQueueAccumulatorLengthFunction<E> lengthFunction, int flushTimeout, TimeUnit flushTimeUnit, FQueueConsumerFactory<E> factory){
-        this.accumulatorFactory = new FQueueAccumulatorFactory<>(maxLength, lengthFunction);
-        this.flushTimeout = flushTimeout;
-        this.flushTimeUnit = flushTimeUnit;
 
-        if(fanOut == 1){
-            executorService.submit(Objects.requireNonNull(consumeBatching(factory.build())));
-        }else{
-            IntStream.range(0, fanOut)
-                    .forEach(i -> {
-                        FQueue<E> child = new FQueue<>(clazz, null);
-                        child.consume(maxLength, lengthFunction, flushTimeout, flushTimeUnit, factory);
-                        childFQueues.add(child);
-                    });
-            executorService.submit(Objects.requireNonNull(consumeDispatcher()));
-        }
+    public BatchingOption.Builder<E> batch(){
+        return BatchingOption.newBuilder(this);
     }
 
+    public void setBatchingOption(BatchingOption<E> batchingOption) {
+        this.batchingOption = batchingOption;
+    }
 
     public FQueue<E> fanOut(int num){
         fanOut = num;
         return this;
     }
+
+
+
+    public void consume(FQueueConsumerFactory<E> factory){
+        this.accumulatorFactory = new FQueueAccumulatorFactory<E>(batchingOption.getChunkSize(), batchingOption.getLengthFunction());
+
+
+        if(fanOut == 1){
+            executorService.submit(Objects.requireNonNull(consumeBatching(factory.build())));
+        }else{
+            IntStream.range(0, fanOut)
+                    .forEach(i -> {
+                        FQueue<E> child = new FQueue<>(clazz, null);
+                        child.setBatchingOption(this.batchingOption);
+                        child.consume(factory);
+                        childFQueues.add(child);
+                    });
+            executorService.submit(Objects.requireNonNull(consumeDispatcher()));
+        }
+    }
+
+
+
+
+
+
 
     public Class<E> getInputClass() { return this.clazz; }
     public BlockingQueue<E> getQueue(){
@@ -146,7 +144,7 @@ public class FQueue<E> {
                 try
                 {
 
-                    long deadline = System.nanoTime() + flushTimeUnit.toNanos(flushTimeout);
+                    long deadline = System.nanoTime() + batchingOption.getFlushTimeUnit().toNanos(batchingOption.getFlushTimeout());
                     boolean isAccumulatorAvailable;
                     E elm;
 

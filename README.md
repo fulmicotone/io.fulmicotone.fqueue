@@ -59,11 +59,12 @@ https://jitpack.io/#fulmicotone/io.fulmicotone.fqueue
 ```java
         registry.buildFQueue(String.class)
                 .batch()
-                .withChunkSize(5)
+                .withChunkSize(15)
+                .withLengthFunction(s -> (long)s.getBytes().length)
                 .withFlushTimeout(1)
                 .withFlushTimeUnit(TimeUnit.SECONDS)
                 .done()
-                .consume(() -> (broadcaster, elms) -> System.out.println("CASE 2 - Elements batched are: "+elms.size()));
+                .consume(() -> (broadcaster, elms) -> System.out.println("CASE 3 - Elements batched are: "+elms.size()));
 ```
 
 

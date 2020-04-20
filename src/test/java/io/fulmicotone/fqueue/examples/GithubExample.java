@@ -1,5 +1,6 @@
 package io.fulmicotone.fqueue.examples;
 
+import io.fulmicotone.fqueue.FQueue;
 import io.fulmicotone.fqueue.FQueueRegistry;
 import org.junit.Test;
 
@@ -61,7 +62,8 @@ public class GithubExample {
                 .withFlushTimeout(1)
                 .withFlushTimeUnit(TimeUnit.SECONDS)
                 .done()
-                .consume(() -> (operations, elms) -> System.out.println("CASE 2 - Elements batched are: "+elms.size()));
+                .consume(() -> (operations, elms) -> System.out.println("CASE 2 - Elements batched are: " + elms.size()));
+
 
 
         /**
@@ -154,6 +156,75 @@ public class GithubExample {
         for(int i = 0; i < 10; i++){
             registry.sendBroadcast("Sample");
         }
+
+        Thread.sleep(resultTimeoutInMilliSeconds);
+
+
+
+    }
+
+
+    @Test
+    public void caseBroadcast() throws InterruptedException {
+
+        int resultTimeoutInMilliSeconds = 1_000;
+
+        /**
+         * Make sure that you have only one instance of FQueueRegistry in your project.
+         * If using Spring please annotate it as @Bean
+         */
+        FQueueRegistry registry = new FQueueRegistry();
+
+
+        /**
+         * CASE 4: Batching consuming with FanOut,
+         * fanOut(3) creates three nested FQueue, while the first defined acts as round-robin dispatcher
+         * Every nested FQueue consume data and aggregate them in chunks of 5 elements.
+         * If data are less than chunk size every nested FQueue will flush them every 1 second.
+         */
+        FQueue<String> one = registry.buildFQueue(String.class)
+                .consume(() -> (operations, elms) -> System.out.println("ONE - Elements received are: " + elms.size()));
+
+        FQueue<String> two = registry.buildFQueue(String.class)
+                .consume(() -> (operations, elms) -> System.out.println("TWO - Elements batched are: " + elms.size()));
+
+        /** This will received by one and two  */
+        registry.sendBroadcast("Sample");
+
+
+        Thread.sleep(resultTimeoutInMilliSeconds);
+
+
+
+    }
+
+    @Test
+    public void caseSpecific() throws InterruptedException {
+
+        int resultTimeoutInMilliSeconds = 1_000;
+
+        /**
+         * Make sure that you have only one instance of FQueueRegistry in your project.
+         * If using Spring please annotate it as @Bean
+         */
+        FQueueRegistry registry = new FQueueRegistry();
+
+
+        /**
+         * CASE 4: Batching consuming with FanOut,
+         * fanOut(3) creates three nested FQueue, while the first defined acts as round-robin dispatcher
+         * Every nested FQueue consume data and aggregate them in chunks of 5 elements.
+         * If data are less than chunk size every nested FQueue will flush them every 1 second.
+         */
+        FQueue<String> one = registry.buildFQueue(String.class)
+                .consume(() -> (operations, elms) -> System.out.println("ONE - Elements received are: " + elms.size()));
+
+        FQueue<String> two = registry.buildFQueue(String.class)
+                .consume(() -> (operations, elms) -> System.out.println("TWO - Elements batched are: " + elms.size()));
+
+        /** This will received by one  */
+        one.getQueue().add("Sample");
+
 
         Thread.sleep(resultTimeoutInMilliSeconds);
 

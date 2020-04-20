@@ -82,7 +82,7 @@ public class FQueue<E> {
 
 
 
-    public void consume(FQueueConsumerFactory<E> factory){
+    public FQueue<E> consume(FQueueConsumerFactory<E> factory){
         this.accumulatorFactory = new FQueueAccumulatorFactory<E>(batchingOption.getChunkSize(), batchingOption.getLengthFunction());
 
 
@@ -98,6 +98,8 @@ public class FQueue<E> {
                     });
             executorService.submit(Objects.requireNonNull(consumeDispatcher()));
         }
+
+        return this;
     }
 
 

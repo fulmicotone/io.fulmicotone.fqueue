@@ -51,7 +51,7 @@ public class FQueueTest {
                     int childNum = children.incrementAndGet();
 
                     @Override
-                    public void consume(FQueueBroadcast operations, List<String> elms) {
+                    public void consume(FQueueBroadcast broadcaster, List<String> elms) {
                         Integer sum = results.getOrDefault(childNum, 0);
                         results.put(childNum, sum+elms.size());
                     }
@@ -94,7 +94,7 @@ public class FQueueTest {
                 .withFlushTimeout(flushTimeoutInMilliSeconds)
                 .withChunkSize(chunkSize)
                 .done()
-                .consume( () -> (FQueueConsumer<String>) (operations, elms) -> {
+                .consume( () -> (FQueueConsumer<String>) (broadcaster, elms) -> {
 
                     int call = calls.incrementAndGet();
 
@@ -155,7 +155,7 @@ public class FQueueTest {
                     int childNum = children.getAndIncrement();
 
                     @Override
-                    public void consume(FQueueBroadcast operations, List<ComplexObject> elms) {
+                    public void consume(FQueueBroadcast broadcaster, List<ComplexObject> elms) {
 
                         Assert.assertEquals(elms.size(), (chunkSizeInBytes / singleObjectSizeInBytes));
 
@@ -214,7 +214,7 @@ public class FQueueTest {
                 .withChunkSize(chunkSizeInBytes)
                 .withLengthFunction(complexObject -> (long) complexObject.getJson().getBytes().length)
                 .done()
-                .consume(() -> (operations, elms) -> {
+                .consume(() -> (broadcaster, elms) -> {
 
                             int call = calls.incrementAndGet();
 

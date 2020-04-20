@@ -29,7 +29,7 @@ public class FQueueRegistryTest {
                 .withChunkSize(1)
                 .done()
                 .consume(() ->
-                        (operations, elms) -> objectReceived.incrementAndGet());
+                        (broadcaster, elms) -> objectReceived.incrementAndGet());
 
         List<String> list = registry.getStatuses();
 
@@ -59,7 +59,7 @@ public class FQueueRegistryTest {
                 .withChunkSize(1)
                 .done()
                 .consume( () ->
-                        (operations, elms) -> objectReceived.incrementAndGet());
+                        (broadcaster, elms) -> objectReceived.incrementAndGet());
 
 
         List<String> list = registry.getStatuses();

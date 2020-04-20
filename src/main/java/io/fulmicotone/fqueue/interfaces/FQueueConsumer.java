@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface FQueueConsumer<I> {
 
-    void consume(FQueueBroadcast operations, List<I> elms);
+    void consume(FQueueBroadcast broadcaster, List<I> elms);
 }

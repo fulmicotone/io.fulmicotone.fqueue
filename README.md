@@ -35,7 +35,7 @@
 
 ```java
         registry.buildFQueue(String.class)
-                .consume(() -> (operations, elms) -> System.out.println("CASE 1 - Elements batched are: "+elms.size()));
+                .consume(() -> (broadcaster, elms) -> System.out.println("CASE 1 - Elements batched are: "+elms.size()));
 
 ```
 
@@ -50,7 +50,7 @@
                 .withFlushTimeout(1)
                 .withFlushTimeUnit(TimeUnit.SECONDS)
                 .done()
-                .consume(() -> (operations, elms) -> System.out.println("CASE 2 - Elements batched are: "+elms.size()));
+                .consume(() -> (broadcaster, elms) -> System.out.println("CASE 2 - Elements batched are: "+elms.size()));
 ```
 
 
@@ -65,7 +65,7 @@
                 .withFlushTimeout(1)
                 .withFlushTimeUnit(TimeUnit.SECONDS)
                 .done()
-                .consume(() -> (operations, elms) -> System.out.println("CASE 2 - Elements batched are: "+elms.size()));
+                .consume(() -> (broadcaster, elms) -> System.out.println("CASE 2 - Elements batched are: "+elms.size()));
 ```
 
 
@@ -81,7 +81,7 @@
                 .withFlushTimeout(1)
                 .withFlushTimeUnit(TimeUnit.SECONDS)
                 .done()
-                .consume(() -> (operations, elms) -> {
+                .consume(() -> (broadcaster, elms) -> {
 
                     System.out.println("CASE 4 - currentThread is: "+Thread.currentThread().getName()+ " - Elements batched are: "+elms.size());
                 });
@@ -98,10 +98,10 @@
 - If multiple FQueue consumes the same class, every object will be sent to them.
 ```java
         FQueue<String> one = registry.buildFQueue(String.class)
-                .consume(() -> (operations, elms) -> System.out.println("ONE - Elements received are: " + elms.size()));
+                .consume(() -> (broadcaster, elms) -> System.out.println("ONE - Elements received are: " + elms.size()));
 
         FQueue<String> two = registry.buildFQueue(String.class)
-                .consume(() -> (operations, elms) -> System.out.println("TWO - Elements batched are: " + elms.size()));
+                .consume(() -> (broadcaster, elms) -> System.out.println("TWO - Elements batched are: " + elms.size()));
         
         /** This will received by one and two  */
         registry.sendBroadcast("Sample");
@@ -110,15 +110,18 @@
 - In the case you have multiple FQueue that receive the same class, and you want to send an object to a specific FQueue, you need to push into it's queue. 
 ```java
         FQueue<String> one = registry.buildFQueue(String.class)
-                .consume(() -> (operations, elms) -> System.out.println("ONE - Elements received are: " + elms.size()));
+                .consume(() -> (broadcaster, elms) -> System.out.println("ONE - Elements received are: " + elms.size()));
 
         FQueue<String> two = registry.buildFQueue(String.class)
-                .consume(() -> (operations, elms) -> System.out.println("TWO - Elements batched are: " + elms.size()));
+                .consume(() -> (broadcaster, elms) -> System.out.println("TWO - Elements batched are: " + elms.size()));
 
         /** This will received by one  */
         one.getQueue().add("Sample");
 ```
 
+#### Push data to another FQueue from consuming function
+- Sometimes you want to pass datas between FQueue
+- It's possible by calling the "brodacaster" object injected into the consuming function
 
 Please checkout all these examples under:
 https://github.com/fulmicotone/io.fulmicotone.fqueue/blob/master/src/test/java/io/fulmicotone/fqueue/examples/GithubExample.java

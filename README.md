@@ -122,6 +122,23 @@
 #### Push data to another FQueue from consuming function
 - Sometimes you want to pass datas between FQueue
 - It's possible by calling the "brodacaster" object injected into the consuming function
+```java
+        FQueue<String> one = registry.buildFQueue(String.class)
+                .consume(() -> (broadcaster, elms) -> {
+                    // count all characters and send them to "two" FQueue
+                    elms.stream()
+                            .map(String::length)
+                            .forEach(broadcaster::sendBroadcast);
+                });
+
+        FQueue<Integer> two = registry.buildFQueue(Integer.class)
+                .consume(() -> (broadcaster, elms) -> {
+                    elms.forEach(ch -> System.out.println("Character size is:" + ch));
+                });
+
+        /** This will received by one  */
+        one.getQueue().add("Sample");
+```
 
 Please checkout all these examples under:
 https://github.com/fulmicotone/io.fulmicotone.fqueue/blob/master/src/test/java/io/fulmicotone/fqueue/examples/GithubExample.java

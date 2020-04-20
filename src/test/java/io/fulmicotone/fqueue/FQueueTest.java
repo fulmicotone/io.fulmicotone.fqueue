@@ -41,7 +41,12 @@ public class FQueueTest {
 
         registry.buildFQueue(String.class)
                 .fanOut(fanOut)
-                .consume(chunkSize, flushTimeoutInMilliSeconds, TimeUnit.MILLISECONDS, () -> new FQueueConsumer<String>() {
+                .batch()
+                .withFlushTimeUnit(TimeUnit.MILLISECONDS)
+                .withFlushTimeout(flushTimeoutInMilliSeconds)
+                .withChunkSize(chunkSize)
+                .done()
+                .consume(() -> new FQueueConsumer<String>() {
 
                     int childNum = children.incrementAndGet();
 
@@ -84,7 +89,12 @@ public class FQueueTest {
 
 
         registry.buildFQueue(String.class)
-                .consume(chunkSize, flushTimeoutInMilliSeconds, TimeUnit.MILLISECONDS, () -> (FQueueConsumer<String>) (operations, elms) -> {
+                .batch()
+                .withFlushTimeUnit(TimeUnit.MILLISECONDS)
+                .withFlushTimeout(flushTimeoutInMilliSeconds)
+                .withChunkSize(chunkSize)
+                .done()
+                .consume( () -> (FQueueConsumer<String>) (operations, elms) -> {
 
                     int call = calls.incrementAndGet();
 
@@ -134,12 +144,13 @@ public class FQueueTest {
 
         registry.buildFQueue(ComplexObject.class)
                 .fanOut(fanOut)
-                .consume(chunkSizeInBytes,
-                        // Get JSON string and than length
-                        complexObject -> (long) complexObject.getJson().getBytes().length,
-                        flushTimeoutInMilliSeconds,
-                        TimeUnit.MILLISECONDS,
-                        () -> new FQueueConsumer<ComplexObject>() {
+                .batch()
+                .withFlushTimeUnit(TimeUnit.MILLISECONDS)
+                .withFlushTimeout(flushTimeoutInMilliSeconds)
+                .withChunkSize(chunkSizeInBytes)
+                .withLengthFunction(complexObject -> (long) complexObject.getJson().getBytes().length)
+                .done()
+                .consume(() -> new FQueueConsumer<ComplexObject>() {
 
                     int childNum = children.getAndIncrement();
 
@@ -197,12 +208,13 @@ public class FQueueTest {
 
 
         registry.buildFQueue(ComplexObject.class)
-                .consume(chunkSizeInBytes,
-                        // Get JSON string and than length
-                        complexObject -> (long) complexObject.getJson().getBytes().length,
-                        flushTimeoutInMilliSeconds,
-                        TimeUnit.MILLISECONDS,
-                        () -> (operations, elms) -> {
+                .batch()
+                .withFlushTimeUnit(TimeUnit.MILLISECONDS)
+                .withFlushTimeout(flushTimeoutInMilliSeconds)
+                .withChunkSize(chunkSizeInBytes)
+                .withLengthFunction(complexObject -> (long) complexObject.getJson().getBytes().length)
+                .done()
+                .consume(() -> (operations, elms) -> {
 
                             int call = calls.incrementAndGet();
 

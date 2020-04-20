@@ -18,95 +18,75 @@
 - FQueueRegistry is the class which maintains all FQueue's objects and is able to send datas to them.
 
 
-#### FQueue Architecture
+#### Usage
 
-![alt tag](https://raw.githubusercontent.com/fulmicotone/io.fulmicotone.fqueue/develop/res/drawioImg/fqueue_single.png)
+##### Instatiate only one registry!
+Make sure that you have only one instance of FQueueRegistry in your project.
+If using Spring please annotate it as @Bean
 
-#### FQueue with fan-out
-
-![alt tag](https://raw.githubusercontent.com/fulmicotone/io.fulmicotone.fqueue/develop/res/drawioImg/round_robin.png)
-
-#### FQueueRegistry
-
-![alt tag](https://raw.githubusercontent.com/fulmicotone/io.fulmicotone.fqueue/develop/res/drawioImg/fqueue_registry.png)
-
-### Installation:
-
-Gradle, Maven etc.. from jitpack
-https://jitpack.io/#fulmicotone/io.fulmicotone.fqueue
-
-
-
-### Example
-
-Imagine a pageview data stream coming from your website and you want to:
-- Count every PageView request that comes from the same domain, sum them and printing result (just for fun).
-- Transform one PageView object into a Intent object if some conditions occurs on database.
-- Pass Intent objects to another stream that will save them on database of fired intents.
-
-#### Example - services overview
-
-![alt tag](https://raw.githubusercontent.com/fulmicotone/com.fulmicotone.qio/develop/misc/qio_example.jpg)
-
-#### Example - services implementation
 ```java
-
-
         FQueueRegistry registry = new FQueueRegistry();
-
-
-        List<Intent> intentStore = new ArrayList<>();
-        Set<DomainCount> domainCounts = new HashSet<>();
+```
 
 
 
-        // Receive PageView and transform them in Domain counts
-        registry.buildFQueue(PageView.class)
-                .consume(100, 1_000, TimeUnit.MILLISECONDS, () -> ((operations, pageViews) -> {
+##### Standard consuming
+Simple consuming, by default consumes 1 element at time.
 
-                    domainCounts.addAll(new FromPageViewsToDomainCount()
-                            .apply(pageViews));
-                }));
+```java
+        registry.buildFQueue(String.class)
+                .consume(() -> (operations, elms) -> System.out.println("CASE 1 - Elements batched are: "+elms.size()));
 
-        // Receive PageView and transform them in Intents
-        registry.buildFQueue(PageView.class)
-                .consume(chunkSize, flushTimeoutInMilliSeconds, TimeUnit.MILLISECONDS, () -> ((operations, pageViews) -> {
-
-                    // Get random intent function for test
-                    Function<PageView, Intent> fn = pageView -> new Intent(pageView.getUserId(), UUID.randomUUID().toString());
-
-                    // Get intent for page views and broadcast them to Intent receiver.
-                    pageViews.stream().map(fn).forEach(operations::sendBroadcast);
-
-                }));
+```
 
 
-        // Intent receiver
-        registry.buildFQueue(Intent.class)
-                .consume(chunkSize, flushTimeoutInMilliSeconds, TimeUnit.MILLISECONDS, () -> ((operations, intents) -> {
-
-                    // store intents somewhere, now just print them.
-                    intentStore.addAll(intents);
-
-                }));
-
-
-        // Send fake objects
-        for(int i = 0; i < 10; i++){
-            PageView pv = new PageView("http://www.google.com", "uid"+i);
-            PageView pv2 = new PageView("http://www.yahoo.com", "uid"+i);
-            registry.sendBroadcast(pv);
-            registry.sendBroadcast(pv2);
-        }
-
-        Thread.sleep(resultTimeoutInMilliSeconds);
+##### Batching consuming
+Consumes data and aggregate them in chunks of 5 elements.
+If data are less than chunk size it will flush them every 1 second.
+```java
+        registry.buildFQueue(String.class)
+                .batch()
+                .withChunkSize(5)
+                .withFlushTimeout(1)
+                .withFlushTimeUnit(TimeUnit.SECONDS)
+                .done()
+                .consume(() -> (operations, elms) -> System.out.println("CASE 2 - Elements batched are: "+elms.size()));
+```
 
 
-        // Print stats
-        System.out.println("Domain counts");
-        domainCounts.forEach(System.out::println);
+##### Batching consuming with custom accumulation function
+Batching consuming with a custom accumulation function.
+it consumes data and aggregate them in chunks of 15 bytes elements (2 "Sample" string will fit in).
+If data are less than chunk size it will flush them every 1 second.
+```java
+        registry.buildFQueue(String.class)
+                .batch()
+                .withChunkSize(5)
+                .withFlushTimeout(1)
+                .withFlushTimeUnit(TimeUnit.SECONDS)
+                .done()
+                .consume(() -> (operations, elms) -> System.out.println("CASE 2 - Elements batched are: "+elms.size()));
+```
 
-        System.out.println("Queue statuses");
-        registry.getStatuses().forEach(System.out::println);
+
+##### Batching consuming with fanOut (parallelism)
+fanOut(3) creates three nested FQueue, while the first defined acts as round-robin dispatcher
+Every nested FQueue consume data and aggregate them in chunks of 5 elements.
+If data are less than chunk size every nested FQueue will flush them every 1 second.
+```java
+        registry.buildFQueue(String.class)
+                .fanOut(3)
+                .batch()
+                .withChunkSize(5)
+                .withFlushTimeout(1)
+                .withFlushTimeUnit(TimeUnit.SECONDS)
+                .done()
+                .consume(() -> (operations, elms) -> {
+
+                    System.out.println("CASE 4 - currentThread is: "+Thread.currentThread().getName()+ " - Elements batched are: "+elms.size());
+                });
+```
 
 
+Please checkout all these examples under:
+https://github.com/fulmicotone/io.fulmicotone.fqueue/blob/master/src/test/java/io/fulmicotone/fqueue/examples/GithubExample.java

@@ -1,5 +1,7 @@
 package io.fulmicotone.fqueue;
 
+import io.fulmicotone.fqueue.interfaces.FQueueConsumerFactory;
+import io.fulmicotone.fqueue.options.BatchingOption;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,13 +23,25 @@ public class FQueueBroadcastTest {
 
         AtomicInteger objectReceived = new AtomicInteger();
 
-        registry.buildFQueue(String.class)
-                .consume(1, 100, TimeUnit.MILLISECONDS, () ->
-                        (operations, elms) -> objectReceived.incrementAndGet());
+        FQueueConsumerFactory<String> stringFQueueConsumerFactory = () ->
+                (operations, elms) -> objectReceived.incrementAndGet();
 
         registry.buildFQueue(String.class)
-                .consume(1, 100, TimeUnit.MILLISECONDS, () ->
-                        (operations, elms) -> objectReceived.incrementAndGet());
+                .batch()
+                .withFlushTimeUnit(TimeUnit.MILLISECONDS)
+                .withFlushTimeout(100)
+                .withChunkSize(1)
+                .done()
+                .consume(
+                        stringFQueueConsumerFactory);
+
+        registry.buildFQueue(String.class)
+                .batch()
+                .withFlushTimeUnit(TimeUnit.MILLISECONDS)
+                .withFlushTimeout(100)
+                .withChunkSize(1)
+                .done()
+                .consume(stringFQueueConsumerFactory);
 
         FQueueBroadcast broadcast = new FQueueBroadcast(registry);
 
@@ -51,13 +65,25 @@ public class FQueueBroadcastTest {
 
         AtomicInteger objectReceived = new AtomicInteger();
 
-        registry.buildFQueue(String.class)
-                .consume(1, 100, TimeUnit.MILLISECONDS, () ->
-                        (operations, elms) -> objectReceived.incrementAndGet());
+        FQueueConsumerFactory<String> stringFQueueConsumerFactory = () ->
+                (operations, elms) -> objectReceived.incrementAndGet();
 
         registry.buildFQueue(String.class)
-                .consume(1, 100, TimeUnit.MILLISECONDS, () ->
-                        (operations, elms) -> objectReceived.incrementAndGet());
+                .batch()
+                .withFlushTimeUnit(TimeUnit.MILLISECONDS)
+                .withFlushTimeout(100)
+                .withChunkSize(1)
+                .done()
+                .consume(
+                        stringFQueueConsumerFactory);
+
+        registry.buildFQueue(String.class)
+                .batch()
+                .withFlushTimeUnit(TimeUnit.MILLISECONDS)
+                .withFlushTimeout(100)
+                .withChunkSize(1)
+                .done()
+                .consume(stringFQueueConsumerFactory);
 
         FQueueBroadcast broadcast = new FQueueBroadcast(registry);
 

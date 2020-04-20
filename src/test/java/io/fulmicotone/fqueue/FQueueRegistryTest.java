@@ -23,7 +23,12 @@ public class FQueueRegistryTest {
         AtomicInteger objectReceived = new AtomicInteger();
 
         registry.buildFQueue(String.class)
-                .consume(1, 100, TimeUnit.MILLISECONDS, () ->
+                .batch()
+                .withFlushTimeUnit(TimeUnit.MILLISECONDS)
+                .withFlushTimeout(100)
+                .withChunkSize(1)
+                .done()
+                .consume(() ->
                         (operations, elms) -> objectReceived.incrementAndGet());
 
         List<String> list = registry.getStatuses();
@@ -48,7 +53,12 @@ public class FQueueRegistryTest {
 
         registry.buildFQueue(String.class)
                 .fanOut(fanOut)
-                .consume(1, 100, TimeUnit.MILLISECONDS, () ->
+                .batch()
+                .withFlushTimeUnit(TimeUnit.MILLISECONDS)
+                .withFlushTimeout(100)
+                .withChunkSize(1)
+                .done()
+                .consume( () ->
                         (operations, elms) -> objectReceived.incrementAndGet());
 
 

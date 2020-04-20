@@ -1,21 +1,19 @@
-# FQueue - Simple thread-safe queue consumer
+# FQueue - thread-saFe Queue consumer
 &nbsp;[![Build Status](https://travis-ci.org/fulmicotone/io.fulmicotone.fqueue.svg?branch=master)](https://travis-ci.org/fulmicotone/io.fulmicotone.fqueue) &nbsp;[![](https://jitpack.io/v/fulmicotone/io.fulmicotone.fqueue.svg)](https://jitpack.io/#fulmicotone/io.fulmicotone.fqueue) &nbsp; [![Coverage Status](https://coveralls.io/repos/github/fulmicotone/io.fulmicotone.fqueue/badge.svg?branch=master)](https://coveralls.io/github/fulmicotone/io.fulmicotone.fqueue?branch=master)
 
 
-### Goal - Build a simple thread-safe queue consumer in pure java8
+### Goal - Simple queue consumer for continuous data streaming
 
-- Makes simple handling different data flows.
-- Expose one simple interface easy to implement and thread-safe (because only one thread will execute the user code)
-- Micro-batches elements based on count or custom accumulators with periodic flushing timeout.
-- Uses all the power of the machine/instance (with java FixedThreadPool based on machine cores)
+- Transparent: Handling different data flows using java queues with runnable transparently.
+- Simple: Expose one simple interface easy to implement and thread-safe.
+- Batch support: Batching elements with time-based flushing.
+- Lightweight: No third-party libraries, pure java8.
 
 
-### How is designed:
 
-- Every FQueue process objects of certain class applying a user-defined task.
-- FQueue could be single thread or fan-out in multi thread.
-- FanOut is supported in order to process with multiples core a stream of objects dispatched in round-robin mode.
-- FQueueRegistry is the class which maintains all FQueue's objects and is able to send datas to them.
+### Installation:
+
+https://jitpack.io/#fulmicotone/io.fulmicotone.fqueue
 
 
 ### Usage
@@ -69,7 +67,7 @@
 ```
 
 
-#### Batching consuming with fanOut (parallelism)
+#### Batching consuming with fanOut
 - fanOut(3) creates three nested FQueue, while the first defined acts as round-robin dispatcher.
 - Every nested FQueue consume data and aggregate them in chunks of 5 elements.
 - If data are less than chunk size every nested FQueue will flush them every 1 second.

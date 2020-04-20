@@ -18,11 +18,11 @@
 - FQueueRegistry is the class which maintains all FQueue's objects and is able to send datas to them.
 
 
-#### Usage
+### Usage
 
-##### Instatiate only one registry!
-Make sure that you have only one instance of FQueueRegistry in your project.
-If using Spring please annotate it as @Bean
+#### Instatiate only one registry!
+- Make sure that you have only one instance of FQueueRegistry in your project.
+- If using Spring please annotate it as @Bean
 
 ```java
         FQueueRegistry registry = new FQueueRegistry();
@@ -30,8 +30,8 @@ If using Spring please annotate it as @Bean
 
 
 
-##### Standard consuming
-Simple consuming, by default consumes 1 element at time.
+#### Standard consuming
+- Simple consuming, by default consumes 1 element at time.
 
 ```java
         registry.buildFQueue(String.class)
@@ -40,9 +40,9 @@ Simple consuming, by default consumes 1 element at time.
 ```
 
 
-##### Batching consuming
-Consumes data and aggregate them in chunks of 5 elements.
-If data are less than chunk size it will flush them every 1 second.
+#### Batching consuming
+- Consumes data and aggregate them in chunks of 5 elements.
+- If data are less than chunk size it will flush them every 1 second.
 ```java
         registry.buildFQueue(String.class)
                 .batch()
@@ -54,10 +54,10 @@ If data are less than chunk size it will flush them every 1 second.
 ```
 
 
-##### Batching consuming with custom accumulation function
-Batching consuming with a custom accumulation function.
-it consumes data and aggregate them in chunks of 15 bytes elements (2 "Sample" string will fit in).
-If data are less than chunk size it will flush them every 1 second.
+#### Batching consuming with custom accumulation function
+- Batching consuming with a custom accumulation function.
+- It consumes data and aggregate them in chunks of 15 bytes elements (2 "Sample" string will fit in).
+- If data are less than chunk size it will flush them every 1 second.
 ```java
         registry.buildFQueue(String.class)
                 .batch()
@@ -69,10 +69,10 @@ If data are less than chunk size it will flush them every 1 second.
 ```
 
 
-##### Batching consuming with fanOut (parallelism)
-fanOut(3) creates three nested FQueue, while the first defined acts as round-robin dispatcher
-Every nested FQueue consume data and aggregate them in chunks of 5 elements.
-If data are less than chunk size every nested FQueue will flush them every 1 second.
+#### Batching consuming with fanOut (parallelism)
+- fanOut(3) creates three nested FQueue, while the first defined acts as round-robin dispatcher.
+- Every nested FQueue consume data and aggregate them in chunks of 5 elements.
+- If data are less than chunk size every nested FQueue will flush them every 1 second.
 ```java
         registry.buildFQueue(String.class)
                 .fanOut(3)
@@ -85,6 +85,38 @@ If data are less than chunk size every nested FQueue will flush them every 1 sec
 
                     System.out.println("CASE 4 - currentThread is: "+Thread.currentThread().getName()+ " - Elements batched are: "+elms.size());
                 });
+```
+
+#### Push datas into FQueue
+- Use the registry to push datas into FQueue.
+- Registry will send your object only to FQueue's which consume it's class.
+```java
+        registry.sendBroadcast("Sample");
+        registry.sendBroadcast(2);
+        registry.sendBroadcast(new AnyObjectYouWant());
+```
+- If multiple FQueue consumes the same class, every object will be sent to them.
+```java
+        FQueue<String> one = registry.buildFQueue(String.class)
+                .consume(() -> (operations, elms) -> System.out.println("ONE - Elements received are: " + elms.size()));
+
+        FQueue<String> two = registry.buildFQueue(String.class)
+                .consume(() -> (operations, elms) -> System.out.println("TWO - Elements batched are: " + elms.size()));
+        
+        /** This will received by one and two  */
+        registry.sendBroadcast("Sample");
+```
+
+- In the case you have multiple FQueue that receive the same class, and you want to send an object to a specific FQueue, you need to push into it's queue. 
+```java
+        FQueue<String> one = registry.buildFQueue(String.class)
+                .consume(() -> (operations, elms) -> System.out.println("ONE - Elements received are: " + elms.size()));
+
+        FQueue<String> two = registry.buildFQueue(String.class)
+                .consume(() -> (operations, elms) -> System.out.println("TWO - Elements batched are: " + elms.size()));
+
+        /** This will received by one  */
+        one.getQueue().add("Sample");
 ```
 
 

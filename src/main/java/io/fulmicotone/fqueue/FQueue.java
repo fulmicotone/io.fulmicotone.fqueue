@@ -83,11 +83,15 @@ public class FQueue<E> {
 
 
     public FQueue<E> consume(FQueueConsumerFactory<E> factory){
-        this.accumulatorFactory = new FQueueAccumulatorFactory<E>(batchingOption.getChunkSize(), batchingOption.getLengthFunction());
+        this.accumulatorFactory = new FQueueAccumulatorFactory<>(batchingOption.getChunkSize(), batchingOption.getLengthFunction());
 
 
         if(fanOut == 1){
-            executorService.submit(Objects.requireNonNull(consumeBatching(factory.build())));
+            if(batchingOption.getLengthFunction() == null){
+                executorService.submit(Objects.requireNonNull(consumeBatchingSize(factory.build())));
+            }else{
+                executorService.submit(Objects.requireNonNull(consumeBatchingAccumulator(factory.build())));
+            }
         }else{
             IntStream.range(0, fanOut)
                     .forEach(i -> {
@@ -134,7 +138,7 @@ public class FQueue<E> {
 
 
 
-    private Runnable consumeBatching(FQueueConsumer<E> consumer){
+    private Runnable consumeBatchingAccumulator(FQueueConsumer<E> consumer){
 
 
         return () -> {
@@ -176,6 +180,54 @@ public class FQueue<E> {
 
                     accumulator = accumulatorFactory.build();
                     if(elm != null){ accumulator.add(elm); }
+
+                }
+                catch(Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+
+            return;
+        };
+    }
+
+
+    private Runnable consumeBatchingSize(FQueueConsumer<E> consumer){
+
+        final int maxSize = batchingOption.getChunkSize();
+        final TimeUnit timeUnit = batchingOption.getFlushTimeUnit();
+        final int timeout = batchingOption.getFlushTimeout();
+
+        return () -> {
+            while (!Thread.currentThread().isInterrupted())
+            {
+                try
+                {
+                    E elm;
+                    List<E> collection = new ArrayList<>();
+                    long deadline = System.nanoTime() + timeUnit.toNanos(timeout);
+
+                    do{
+                        elm = queue.poll(1, TimeUnit.NANOSECONDS);
+
+                        if (elm == null) { // not enough elements immediately available; will have to poll
+                            elm = queue.poll(deadline - System.nanoTime(), TimeUnit.NANOSECONDS);
+                            if (elm == null) {
+                                break; // we already waited enough, and there are no more elements in sight
+                            }
+                            received.incrementAndGet();
+                            collection.add(elm);
+                        }else{
+                            received.incrementAndGet();
+                            collection.add(elm);
+                        }
+                    }
+                    while (collection.size() < maxSize);
+
+                    if(collection.size() > 0){
+                        batched.addAndGet(collection.size());
+                        consumer.consume(broadcaster, collection);
+                    }
 
                 }
                 catch(Exception ex) {

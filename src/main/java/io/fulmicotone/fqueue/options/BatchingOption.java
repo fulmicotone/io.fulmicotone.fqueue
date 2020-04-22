@@ -51,7 +51,7 @@ public class BatchingOption<E> {
         private int chunkSize = 1;
         private int flushTimeout = 10;
         private TimeUnit flushTimeUnit = TimeUnit.MILLISECONDS;
-        private FQueueAccumulatorLengthFunction<E> lengthFunction = e -> 1L;
+        private FQueueAccumulatorLengthFunction<E> lengthFunction;
 
         private Builder(FQueue<E> caller) {
             this.caller = caller;

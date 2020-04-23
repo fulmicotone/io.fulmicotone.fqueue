@@ -1,6 +1,5 @@
 package io.fulmicotone.fqueue;
 
-import io.fulmicotone.fqueue.accumulators.FQueueAccumulatorLengthFunction;
 import io.fulmicotone.fqueue.interfaces.FQueueConsumer;
 import io.fulmicotone.fqueue.model.ComplexObject;
 import org.junit.Assert;
@@ -148,7 +147,7 @@ public class FQueueTest {
                 .withFlushTimeUnit(TimeUnit.MILLISECONDS)
                 .withFlushTimeout(flushTimeoutInMilliSeconds)
                 .withChunkSize(chunkSizeInBytes)
-                .withLengthFunction(complexObject -> (long) complexObject.getJson().getBytes().length)
+                .withLengthFunction(complexObject ->  complexObject.getJson().getBytes().length)
                 .done()
                 .consume(() -> new FQueueConsumer<ComplexObject>() {
 
@@ -212,7 +211,7 @@ public class FQueueTest {
                 .withFlushTimeUnit(TimeUnit.MILLISECONDS)
                 .withFlushTimeout(flushTimeoutInMilliSeconds)
                 .withChunkSize(chunkSizeInBytes)
-                .withLengthFunction(complexObject -> (long) complexObject.getJson().getBytes().length)
+                .withLengthFunction(complexObject -> complexObject.getJson().getBytes().length)
                 .done()
                 .consume(() -> (broadcaster, elms) -> {
 

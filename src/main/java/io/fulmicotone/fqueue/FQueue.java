@@ -2,10 +2,7 @@ package io.fulmicotone.fqueue;
 
 
 
-
-import io.fulmicotone.fqueue.accumulators.FQueueAccumulator;
-import io.fulmicotone.fqueue.accumulators.FQueueAccumulatorFactory;
-import io.fulmicotone.fqueue.accumulators.FQueueAccumulatorLengthFunction;
+import io.fulmicotone.fqueue.accumulators.FQueueElementLengthFunction;
 import io.fulmicotone.fqueue.interfaces.FQueueConsumer;
 import io.fulmicotone.fqueue.interfaces.FQueueConsumerFactory;
 import io.fulmicotone.fqueue.options.BatchingOption;
@@ -36,10 +33,6 @@ public class FQueue<E> {
     /** Internal executor service. Every FQueue has it's own executor service  */
     private ExecutorService executorService;
 
-    /** Accumulator factory  */
-    private FQueueAccumulatorFactory<E> accumulatorFactory;
-
-
     /** Counters for received, batched objects  */
     private final AtomicLong received = new AtomicLong();
     private final AtomicLong batched = new AtomicLong();
@@ -51,6 +44,9 @@ public class FQueue<E> {
      * while others FQueue child will do the work. This increase parallelism balancing resources.
      * */
     private int fanOut = 1;
+
+    /** Collection that handle child FQueue when fanOut value is greater than 1.
+     * */
     private List<FQueue<E>> childFQueues = new ArrayList<>();
 
 
@@ -67,31 +63,37 @@ public class FQueue<E> {
 
 
 
+    /** Start batching option flow.
+     * @see BatchingOption
+     * */
     public BatchingOption.Builder<E> batch(){
         return BatchingOption.newBuilder(this);
     }
 
+
+    /** Set batching options */
     public void setBatchingOption(BatchingOption<E> batchingOption) {
         this.batchingOption = batchingOption;
     }
 
+    /** When this is greater than 1, the fan-out flow will build.
+     * - N FQueue child objects will be build based on fanOut number.
+     * - This instance will act as dispatcher, send objects to FQueue child in round-robin mode.
+     * */
     public FQueue<E> fanOut(int num){
         fanOut = num;
         return this;
     }
 
 
-
+    /** Start consuming queue
+     * - N FQueue child objects will be build based on fanOut number.
+     * - This instance will act as dispatcher, send objects to FQueue child in round-robin mode.
+     * */
     public FQueue<E> consume(FQueueConsumerFactory<E> factory){
-        this.accumulatorFactory = new FQueueAccumulatorFactory<>(batchingOption.getChunkSize(), batchingOption.getLengthFunction());
-
 
         if(fanOut == 1){
-            if(batchingOption.getLengthFunction() == null){
-                executorService.submit(Objects.requireNonNull(consumeBatchingSize(factory.build())));
-            }else{
-                executorService.submit(Objects.requireNonNull(consumeBatchingAccumulator(factory.build())));
-            }
+            executorService.submit(Objects.requireNonNull(consumeBatching(factory.build())));
         }else{
             IntStream.range(0, fanOut)
                     .forEach(i -> {
@@ -100,23 +102,22 @@ public class FQueue<E> {
                         child.consume(factory);
                         childFQueues.add(child);
                     });
-            executorService.submit(Objects.requireNonNull(consumeDispatcher()));
+            executorService.submit(Objects.requireNonNull(consumeDispatching()));
         }
 
         return this;
     }
 
 
-
-
-
-
-
+    /** Input class  */
     public Class<E> getInputClass() { return this.clazz; }
+
+    /** Instance queue  */
     public BlockingQueue<E> getQueue(){
         return this.queue;
     }
 
+    /** Get stats  */
     public List<String> getStats(){
 
         List<String> base = new ArrayList<>();
@@ -138,71 +139,24 @@ public class FQueue<E> {
 
 
 
-    private Runnable consumeBatchingAccumulator(FQueueConsumer<E> consumer){
 
 
-        return () -> {
-
-            FQueueAccumulator<E> accumulator = accumulatorFactory.build();
-
-            while (!Thread.currentThread().isInterrupted())
-            {
-                try
-                {
-
-                    long deadline = System.nanoTime() + batchingOption.getFlushTimeUnit().toNanos(batchingOption.getFlushTimeout());
-                    boolean isAccumulatorAvailable;
-                    E elm;
-
-                    do{
-                        elm = queue.poll(1, TimeUnit.NANOSECONDS);
-
-                        if (elm == null) { // not enough elements immediately available; will have to poll
-                            elm = queue.poll(deadline - System.nanoTime(), TimeUnit.NANOSECONDS);
-                            if (elm == null) {
-                                break; // we already waited enough, and there are no more elements in sight
-                            }
-                            received.incrementAndGet();
-                            isAccumulatorAvailable = accumulator.add(elm);
-                        }else{
-                            received.incrementAndGet();
-                            isAccumulatorAvailable = accumulator.add(elm);
-                        }
-                    }
-                    while (isAccumulatorAvailable);
-
-                    List<E> records = accumulator.getElements();
-
-                    if(records.size() > 0){
-                        batched.addAndGet(records.size());
-                        consumer.consume(broadcaster, records);
-                    }
-
-                    accumulator = accumulatorFactory.build();
-                    if(elm != null){ accumulator.add(elm); }
-
-                }
-                catch(Exception ex) {
-                    ex.printStackTrace();
-                }
-            }
-
-            return;
-        };
-    }
-
-
-    private Runnable consumeBatchingSize(FQueueConsumer<E> consumer){
+    private Runnable consumeBatching(FQueueConsumer<E> consumer){
 
         final int maxSize = batchingOption.getChunkSize();
         final TimeUnit timeUnit = batchingOption.getFlushTimeUnit();
         final int timeout = batchingOption.getFlushTimeout();
+        final FQueueElementLengthFunction<E> lengthFunction = batchingOption.getLengthFunction();
+
 
         return () -> {
+
+            // This is thread safe.
             while (!Thread.currentThread().isInterrupted())
             {
                 try
                 {
+                    int threshold = 0;
                     E elm;
                     List<E> collection = new ArrayList<>();
                     long deadline = System.nanoTime() + timeUnit.toNanos(timeout);
@@ -217,12 +171,14 @@ public class FQueue<E> {
                             }
                             received.incrementAndGet();
                             collection.add(elm);
+                            threshold += lengthFunction.apply(elm);
                         }else{
                             received.incrementAndGet();
                             collection.add(elm);
+                            threshold += lengthFunction.apply(elm);
                         }
                     }
-                    while (collection.size() < maxSize);
+                    while (threshold < maxSize);
 
                     if(collection.size() > 0){
                         batched.addAndGet(collection.size());
@@ -235,12 +191,11 @@ public class FQueue<E> {
                 }
             }
 
-            return;
         };
     }
 
 
-    private Runnable consumeDispatcher(){
+    private Runnable consumeDispatching(){
 
 
         return () -> {
@@ -255,7 +210,6 @@ public class FQueue<E> {
                     received.incrementAndGet();
                     childFQueues.get(counter++ % fanOut).getQueue().add(elm);
                     batched.incrementAndGet();
-
                 }
                 catch(Exception ex) {
                     ex.printStackTrace();
@@ -264,4 +218,5 @@ public class FQueue<E> {
 
         };
     }
+
 }

@@ -1,22 +1,26 @@
 package io.fulmicotone.fqueue.options;
 
 import io.fulmicotone.fqueue.FQueue;
-import io.fulmicotone.fqueue.accumulators.FQueueAccumulatorLengthFunction;
+import io.fulmicotone.fqueue.accumulators.FQueueElementLengthFunction;
 
 import java.util.concurrent.TimeUnit;
 
 public class BatchingOption<E> {
 
-    private FQueue<E> caller;
-
-    /** Flush chunkSize  */
+    /** Batch chunkSize: the max size of chunk based on lengthFunction (default is simple element count */
     private int chunkSize;
-    /** Flush timeout  */
+
+    /** Flush timeout: Unit of flush timeout.
+     * Example: if this is 5 and flushTimeUnit is SECONDS, it means 5 SECONDS.  */
     private int flushTimeout;
-    /** Flush timeunit  */
+
+    /** Flush time unit: Time unit for calculate flush */
     private TimeUnit flushTimeUnit;
-    /** Custom length function, by default is 1 which means that count is based on elements  */
-    private FQueueAccumulatorLengthFunction<E> lengthFunction;
+
+    /** Custom length function:
+     * by default is 1 which means that count is based on elements
+     * */
+    private FQueueElementLengthFunction<E> lengthFunction;
 
     private BatchingOption(Builder builder) {
         chunkSize = builder.chunkSize;
@@ -41,7 +45,7 @@ public class BatchingOption<E> {
         return flushTimeUnit;
     }
 
-    public FQueueAccumulatorLengthFunction<E> getLengthFunction() {
+    public FQueueElementLengthFunction<E> getLengthFunction() {
         return lengthFunction;
     }
 
@@ -51,7 +55,7 @@ public class BatchingOption<E> {
         private int chunkSize = 1;
         private int flushTimeout = 10;
         private TimeUnit flushTimeUnit = TimeUnit.MILLISECONDS;
-        private FQueueAccumulatorLengthFunction<E> lengthFunction;
+        private FQueueElementLengthFunction<E> lengthFunction = e -> 1;
 
         private Builder(FQueue<E> caller) {
             this.caller = caller;
@@ -72,7 +76,7 @@ public class BatchingOption<E> {
             return this;
         }
 
-        public Builder<E> withLengthFunction(FQueueAccumulatorLengthFunction<E> val) {
+        public Builder<E> withLengthFunction(FQueueElementLengthFunction<E> val) {
             lengthFunction = val;
             return this;
         }

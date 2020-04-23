@@ -99,7 +99,7 @@ public class GithubExample {
         registry.buildFQueue(String.class)
                 .batch()
                 .withChunkSize(15)
-                .withLengthFunction(s -> (long)s.getBytes().length)
+                .withLengthFunction(s -> s.getBytes().length)
                 .withFlushTimeout(1)
                 .withFlushTimeUnit(TimeUnit.SECONDS)
                 .done()

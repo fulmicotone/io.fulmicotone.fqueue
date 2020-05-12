@@ -55,7 +55,9 @@ public class FQueue<E> {
      * */
     private Consumer<Exception> exceptionHandler = Throwable::printStackTrace;
 
-
+    /** NOOP handler, this is fired when flushing have 0 elements.
+     * */
+    private Consumer<Void> noopHandler = null;
 
 
     public FQueue(Class<E> clazz, FQueueRegistry registry) {
@@ -150,6 +152,14 @@ public class FQueue<E> {
         return this;
     }
 
+    /** NOOP handler, this is fired when flushing collection have 0 elements.
+     * */
+    public FQueue<E> withNoopHandler(Consumer<Void> handler){
+        noopHandler = handler;
+        return this;
+    }
+
+
 
 
 
@@ -197,6 +207,8 @@ public class FQueue<E> {
                     if(collection.size() > 0){
                         batched.addAndGet(collection.size());
                         consumer.consume(broadcaster, reason, collection);
+                    }else{
+                        Optional.ofNullable(noopHandler).ifPresent(handler -> handler.accept(null));
                     }
 
                 }

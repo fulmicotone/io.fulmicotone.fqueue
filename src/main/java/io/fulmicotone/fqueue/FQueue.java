@@ -3,6 +3,7 @@ package io.fulmicotone.fqueue;
 
 
 import io.fulmicotone.fqueue.accumulators.FQueueElementLengthFunction;
+import io.fulmicotone.fqueue.enums.BatchReason;
 import io.fulmicotone.fqueue.interfaces.FQueueConsumer;
 import io.fulmicotone.fqueue.interfaces.FQueueConsumerFactory;
 import io.fulmicotone.fqueue.options.BatchingOption;
@@ -13,6 +14,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -31,7 +33,7 @@ public class FQueue<E> {
     private FQueueBroadcast broadcaster;
 
     /** Internal executor service. Every FQueue has it's own executor service  */
-    private ExecutorService executorService;
+    protected ExecutorService executorService;
 
     /** Counters for received, batched objects  */
     private final AtomicLong received = new AtomicLong();
@@ -48,6 +50,10 @@ public class FQueue<E> {
     /** Collection that handle child FQueue when fanOut value is greater than 1.
      * */
     private List<FQueue<E>> childFQueues = new ArrayList<>();
+
+    /** Exception handler, by default it prints the stacktrace.
+     * */
+    private Consumer<Exception> exceptionHandler = Throwable::printStackTrace;
 
 
 
@@ -136,7 +142,13 @@ public class FQueue<E> {
 
 
 
-
+    /** When Executor thread terminates or is interrupted an exception will be fired, this will react.
+     * By default it prints the stacktrace.
+     * */
+    public FQueue<E> withRunningExceptionHandler(Consumer<Exception> handler){
+        exceptionHandler = handler;
+        return this;
+    }
 
 
 
@@ -160,6 +172,7 @@ public class FQueue<E> {
                     E elm;
                     List<E> collection = new ArrayList<>();
                     long deadline = System.nanoTime() + timeUnit.toNanos(timeout);
+                    BatchReason reason = BatchReason.MAX_ELEMENT_REACHED;
 
                     do{
                         elm = queue.poll(1, TimeUnit.NANOSECONDS);
@@ -167,6 +180,7 @@ public class FQueue<E> {
                         if (elm == null) { // not enough elements immediately available; will have to poll
                             elm = queue.poll(deadline - System.nanoTime(), TimeUnit.NANOSECONDS);
                             if (elm == null) {
+                                reason = BatchReason.TIME_FLUSH;
                                 break; // we already waited enough, and there are no more elements in sight
                             }
                             received.incrementAndGet();
@@ -182,14 +196,16 @@ public class FQueue<E> {
 
                     if(collection.size() > 0){
                         batched.addAndGet(collection.size());
-                        consumer.consume(broadcaster, collection);
+                        consumer.consume(broadcaster, reason, collection);
                     }
 
                 }
                 catch(Exception ex) {
-                    ex.printStackTrace();
+                    exceptionHandler.accept(ex);
                 }
             }
+
+
 
         };
     }
@@ -212,7 +228,7 @@ public class FQueue<E> {
                     batched.incrementAndGet();
                 }
                 catch(Exception ex) {
-                    ex.printStackTrace();
+                    exceptionHandler.accept(ex);
                 }
             }
 

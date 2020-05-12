@@ -25,7 +25,7 @@ public class GithubExample {
          * CASE 1: Simple consuming, by default it consumes 1 element with flushing every 10 ms.
          */
         registry.buildFQueue(String.class)
-                .consume(() -> (broadcaster, elms) -> System.out.println("CASE 1 - Elements batched are: "+elms.size()));
+                .consume(() -> (broadcaster, reason, elms) -> System.out.println("CASE 1 - Elements batched are: "+elms.size()));
 
         /**
          * Send fake objects
@@ -62,7 +62,7 @@ public class GithubExample {
                 .withFlushTimeout(1)
                 .withFlushTimeUnit(TimeUnit.SECONDS)
                 .done()
-                .consume(() -> (broadcaster, elms) -> System.out.println("CASE 2 - Elements batched are: " + elms.size()));
+                .consume(() -> (broadcaster, reason, elms) -> System.out.println("CASE 2 - Elements batched are: " + elms.size()));
 
 
 
@@ -103,7 +103,7 @@ public class GithubExample {
                 .withFlushTimeout(1)
                 .withFlushTimeUnit(TimeUnit.SECONDS)
                 .done()
-                .consume(() -> (broadcaster, elms) -> System.out.println("CASE 3 - Elements batched are: "+elms.size()));
+                .consume(() -> (broadcaster, reason, elms) -> System.out.println("CASE 3 - Elements batched are: "+elms.size()));
 
 
         /**
@@ -144,7 +144,7 @@ public class GithubExample {
                 .withFlushTimeout(1)
                 .withFlushTimeUnit(TimeUnit.SECONDS)
                 .done()
-                .consume(() -> (broadcaster, elms) -> {
+                .consume(() -> (broadcaster, reason, elms) -> {
 
                     System.out.println("CASE 4 - currentThread is: "+Thread.currentThread().getName()+ " - Elements batched are: "+elms.size());
                 });
@@ -183,10 +183,10 @@ public class GithubExample {
          * If data are less than chunk size every nested FQueue will flush them every 1 second.
          */
         FQueue<String> one = registry.buildFQueue(String.class)
-                .consume(() -> (broadcaster, elms) -> System.out.println("ONE - Elements received are: " + elms.size()));
+                .consume(() -> (broadcaster, reason, elms) -> System.out.println("ONE - Elements received are: " + elms.size()));
 
         FQueue<String> two = registry.buildFQueue(String.class)
-                .consume(() -> (broadcaster, elms) -> System.out.println("TWO - Elements batched are: " + elms.size()));
+                .consume(() -> (broadcaster, reason, elms) -> System.out.println("TWO - Elements batched are: " + elms.size()));
 
         /** This will received by one and two  */
         registry.sendBroadcast("Sample");
@@ -217,10 +217,10 @@ public class GithubExample {
          * If data are less than chunk size every nested FQueue will flush them every 1 second.
          */
         FQueue<String> one = registry.buildFQueue(String.class)
-                .consume(() -> (broadcaster, elms) -> System.out.println("ONE - Elements received are: " + elms.size()));
+                .consume(() -> (broadcaster, reason,elms) -> System.out.println("ONE - Elements received are: " + elms.size()));
 
         FQueue<String> two = registry.buildFQueue(String.class)
-                .consume(() -> (broadcaster, elms) -> System.out.println("TWO - Elements batched are: " + elms.size()));
+                .consume(() -> (broadcaster, reason,elms) -> System.out.println("TWO - Elements batched are: " + elms.size()));
 
         /** This will received by one  */
         one.getQueue().add("Sample");
@@ -250,7 +250,7 @@ public class GithubExample {
          * - It's possible by calling the "brodacaster" object injected into the consuming function
          */
         FQueue<String> one = registry.buildFQueue(String.class)
-                .consume(() -> (broadcaster, elms) -> {
+                .consume(() -> (broadcaster, reason,elms) -> {
                     // count all characters and send them to "two" FQueue
                     elms.stream()
                             .map(String::length)
@@ -258,7 +258,7 @@ public class GithubExample {
                 });
 
         FQueue<Integer> two = registry.buildFQueue(Integer.class)
-                .consume(() -> (broadcaster, elms) -> {
+                .consume(() -> (broadcaster, reason, elms) -> {
                     elms.forEach(ch -> System.out.println("Character size is:" + ch));
                 });
 

@@ -24,7 +24,7 @@ public class FQueueBroadcastTest {
         AtomicInteger objectReceived = new AtomicInteger();
 
         FQueueConsumerFactory<String> stringFQueueConsumerFactory = () ->
-                (broadcaster, elms) -> objectReceived.incrementAndGet();
+                (broadcaster, reason, elms) -> objectReceived.incrementAndGet();
 
         registry.buildFQueue(String.class)
                 .batch()
@@ -66,7 +66,7 @@ public class FQueueBroadcastTest {
         AtomicInteger objectReceived = new AtomicInteger();
 
         FQueueConsumerFactory<String> stringFQueueConsumerFactory = () ->
-                (broadcaster, elms) -> objectReceived.incrementAndGet();
+                (broadcaster, reason, elms) -> objectReceived.incrementAndGet();
 
         registry.buildFQueue(String.class)
                 .batch()

@@ -90,9 +90,9 @@ public class FQueueExceptionsTest {
          * Test size batching.
          * With 100 elements and 5 chunks size I expect 20 calls with 5 elements each.
          * */
-        int elements = 100;
+        int elements = 5;
         int chunkSize = 5;
-        int flushTimeoutInMilliSeconds = 1_000;
+        int flushTimeoutInMilliSeconds = 500;
         int resultTimeoutInMilliSeconds = 2_000;
         AtomicInteger calls = new AtomicInteger();
         AtomicInteger stopped = new AtomicInteger();

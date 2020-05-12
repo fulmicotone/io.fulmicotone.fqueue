@@ -47,7 +47,7 @@ public class FQueueExceptionsTest {
         int elements = 5;
         int chunkSize = 5;
         int flushTimeoutInMilliSeconds = 500;
-        int resultTimeoutInMilliSeconds = 5_000;
+        int resultTimeoutInMilliSeconds = 1_000;
         AtomicInteger calls = new AtomicInteger();
         AtomicInteger stopped = new AtomicInteger();
 
@@ -71,10 +71,12 @@ public class FQueueExceptionsTest {
             registry.sendBroadcast("a"+1);
         }
 
-
-        ((FQueueEX)fqueue).getExecutorService().shutdownNow();
-
         Thread.sleep(resultTimeoutInMilliSeconds);
+
+
+        ExecutorService exec = ((FQueueEX) fqueue).getExecutorService();
+        exec.shutdownNow();
+        exec.awaitTermination(10, TimeUnit.SECONDS);
 
         Assert.assertTrue(stopped.get() > 0);
 
@@ -93,7 +95,7 @@ public class FQueueExceptionsTest {
         int elements = 5;
         int chunkSize = 5;
         int flushTimeoutInMilliSeconds = 500;
-        int resultTimeoutInMilliSeconds = 5_000;
+        int resultTimeoutInMilliSeconds = 1_000;
         AtomicInteger calls = new AtomicInteger();
         AtomicInteger stopped = new AtomicInteger();
 
@@ -119,12 +121,14 @@ public class FQueueExceptionsTest {
         }
 
 
-        ((FQueueEX)fqueue).getExecutorService().shutdownNow();
-
         Thread.sleep(resultTimeoutInMilliSeconds);
 
-        Assert.assertTrue(stopped.get() > 0);
 
+        ExecutorService exec = ((FQueueEX) fqueue).getExecutorService();
+        exec.shutdownNow();
+        exec.awaitTermination(10, TimeUnit.SECONDS);
+
+        Assert.assertTrue(stopped.get() > 0);
 
     }
 

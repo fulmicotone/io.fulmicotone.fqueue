@@ -12,7 +12,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import java.util.function.Consumer;
 
 
 @RunWith(JUnit4.class)
@@ -335,6 +335,45 @@ public class FQueueTest {
         Assert.assertEquals(results.size(), 1);
         Assert.assertTrue(results.values().stream().allMatch(s -> s == elements));
         Assert.assertEquals(batchReasons.get(0), BatchReason.TIME_FLUSH);
+
+
+    }
+
+
+    @Test
+    public void testSizeBatching_NOOP_HANDLER() throws InterruptedException {
+
+        /**
+         * Test size batching.
+         * With 100 elements and 5 chunks size I expect 20 calls with 5 elements each.
+         * */
+        int elements = 5;
+        int chunkSize = 5;
+        int flushTimeoutInMilliSeconds = 500;
+        int resultTimeoutInMilliSeconds = 2_000;
+        AtomicInteger calls = new AtomicInteger();
+        AtomicInteger noops = new AtomicInteger();
+
+        FQueueRegistry registry = new FQueueRegistry();
+
+
+        registry.buildFQueue(String.class)
+                .withNoopHandler(aVoid -> noops.incrementAndGet())
+                .batch()
+                .withFlushTimeUnit(TimeUnit.MILLISECONDS)
+                .withFlushTimeout(flushTimeoutInMilliSeconds)
+                .withChunkSize(chunkSize)
+                .done()
+                .consume( () -> (broadcaster, reason, elms) -> calls.incrementAndGet());
+
+
+        for(int i = 0; i < elements; i++){
+            registry.sendBroadcast("a"+1);
+        }
+
+        Thread.sleep(resultTimeoutInMilliSeconds);
+
+        Assert.assertTrue(noops.get() > 0);
 
 
     }

@@ -105,7 +105,7 @@ public class FQueue<E> {
         }else{
             IntStream.range(0, fanOut)
                     .forEach(i -> {
-                        FQueue<E> child = new FQueue<>(clazz, null);
+                        FQueue<E> child = new FQueue<>(clazz, registry);
                         child.setBatchingOption(this.batchingOption);
                         child.withNoopHandler(noopHandler);
                         child.withRunningExceptionHandler(exceptionHandler);

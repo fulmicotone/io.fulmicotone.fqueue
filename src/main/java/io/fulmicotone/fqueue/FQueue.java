@@ -165,23 +165,19 @@ public class FQueue<E> {
     /** Destroy executor service
      * */
     public void destroy(){
-        executorService.shutdownNow();
         if(fanOut != 1){
             childFQueues.forEach(FQueue::destroy);
         }
+        executorService.shutdownNow();
     }
 
     /** Destroy executor service and await
      * */
     public void destroyAndAwait(Integer timeout, TimeUnit timeUnit) throws InterruptedException{
         if(fanOut != 1){
-            childFQueues.forEach(c -> {
-                try {
-                    c.destroyAndAwait(timeout, timeUnit);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            });
+            for(FQueue child : childFQueues) {
+                child.destroyAndAwait(timeout, timeUnit);
+            }
         }
 
         executorService.shutdownNow();

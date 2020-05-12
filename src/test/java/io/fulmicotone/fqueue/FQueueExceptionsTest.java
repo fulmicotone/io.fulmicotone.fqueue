@@ -23,19 +23,6 @@ import java.util.function.Consumer;
 public class FQueueExceptionsTest {
 
 
-    public class FQueueEX<E> extends FQueue<E>{
-
-
-        public FQueueEX(Class<E> clazz, FQueueRegistry registry) {
-            super(clazz, registry);
-        }
-
-        public ExecutorService getExecutorService(){
-            return this.executorService;
-        }
-    }
-
-
 
     @Test
     public void testSizeBatching_EXCEPTION() throws InterruptedException {
@@ -56,7 +43,7 @@ public class FQueueExceptionsTest {
         Consumer<Exception> exceptionConsumer = e -> stopped.incrementAndGet();
 
 
-        FQueue<String> fqueue = new FQueueEX<>(String.class, registry)
+        FQueue<String> fqueue = new FQueue<>(String.class, registry)
                 .withRunningExceptionHandler(exceptionConsumer)
                 .batch()
                 .withFlushTimeUnit(TimeUnit.MILLISECONDS)
@@ -74,11 +61,9 @@ public class FQueueExceptionsTest {
         Thread.sleep(resultTimeoutInMilliSeconds);
 
 
-        ExecutorService exec = ((FQueueEX) fqueue).getExecutorService();
-        exec.shutdownNow();
-        exec.awaitTermination(10, TimeUnit.SECONDS);
+        fqueue.destroyAndAwait(10, TimeUnit.SECONDS);
 
-        Assert.assertTrue(stopped.get() > 0);
+        Assert.assertEquals(1, stopped.get());
 
 
     }
@@ -104,7 +89,7 @@ public class FQueueExceptionsTest {
         Consumer<Exception> exceptionConsumer = e -> stopped.incrementAndGet();
 
 
-        FQueue<String> fqueue = new FQueueEX<>(String.class, registry)
+        FQueue<String> fqueue = new FQueue<>(String.class, registry)
                 .fanOut(2)
                 .withRunningExceptionHandler(exceptionConsumer)
                 .batch()
@@ -124,11 +109,10 @@ public class FQueueExceptionsTest {
         Thread.sleep(resultTimeoutInMilliSeconds);
 
 
-        ExecutorService exec = ((FQueueEX) fqueue).getExecutorService();
-        exec.shutdownNow();
-        exec.awaitTermination(10, TimeUnit.SECONDS);
+        fqueue.destroyAndAwait(10, TimeUnit.SECONDS);
 
-        Assert.assertTrue(stopped.get() > 0);
+
+        Assert.assertEquals(3, stopped.get());
 
     }
 

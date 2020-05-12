@@ -107,6 +107,8 @@ public class FQueue<E> {
                     .forEach(i -> {
                         FQueue<E> child = new FQueue<>(clazz, null);
                         child.setBatchingOption(this.batchingOption);
+                        child.withNoopHandler(noopHandler);
+                        child.withRunningExceptionHandler(exceptionHandler);
                         child.consume(factory);
                         childFQueues.add(child);
                     });
@@ -160,7 +162,31 @@ public class FQueue<E> {
     }
 
 
+    /** Destroy executor service
+     * */
+    public void destroy(){
+        executorService.shutdownNow();
+        if(fanOut != 1){
+            childFQueues.forEach(FQueue::destroy);
+        }
+    }
 
+    /** Destroy executor service and await
+     * */
+    public void destroyAndAwait(Integer timeout, TimeUnit timeUnit) throws InterruptedException{
+        if(fanOut != 1){
+            childFQueues.forEach(c -> {
+                try {
+                    c.destroyAndAwait(timeout, timeUnit);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+
+        executorService.shutdownNow();
+        executorService.awaitTermination(timeout, timeUnit);
+    }
 
 
     private Runnable consumeBatching(FQueueConsumer<E> consumer){

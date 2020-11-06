@@ -260,6 +260,9 @@ public class FQueue<E> {
                     received.incrementAndGet();
                     childFQueues.get(counter++ % fanOut).getQueue().add(elm);
                     batched.incrementAndGet();
+
+                    // INT OVERFLOW CHECK
+                    if(counter >= fanOut){ counter = 0; }
                 }
                 catch(Exception ex) {
                     exceptionHandler.accept(ex);
